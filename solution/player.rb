@@ -11,13 +11,16 @@ class Player
 		@warrior = nil
     @is_resting = false
     @found_captives = false
+    @is_a_unit_in_front = false
 	end
 
   def play_turn(warrior)
 
   	@warrior = warrior
 
-  	bind_close_enemies! unless @most_close_enemies_are_binded 
+    clean_the_room!
+
+  	bind_close_enemies! unless @most_close_enemies_are_binded && @is_a_unit_in_front
 
   	rest! if (needs_rest? && !im_being_attack?)
 
@@ -25,8 +28,19 @@ class Player
 
     rescue_captives! if !@is_resting && @enemy_directions.empty?
 
-    warrior.walk!(warrior.direction_of_stairs) if !@is_resting && @enemy_directions.empty? && !@found_captives
+  end
 
+  def clean_the_room!
+    spaces_with_units = @warrior.listen 
+    spaces_with_units.each do |unit|
+      if !@warrior.feel(@warrior.direction_of(unit)).empty?
+        return @is_a_unit_in_front = true    
+      else
+        @warrior.walk!(@warrior.direction_of(unit)) unless unit.stairs? 
+        return @is_a_unit_in_front = false        
+      end
+    end
+    @warrior.walk!(@warrior.direction_of_stairs) unless needs_rest?
   end
 
   def rescue_captives!
