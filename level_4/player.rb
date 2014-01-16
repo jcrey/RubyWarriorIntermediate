@@ -1,127 +1,113 @@
 class Player
 
 	def initialize
-		@maxHealth = 20
-		@minHealth = 10
-		@isFullRecover = true
-		@healthLevelLastTurn = 20
-		@directionOfStairs = nil
+		@max_health = 20
+		@min_health = 10
+		@is_full_recover = true
+		@health_level_last_turn = 20
 		@directions = [:forward, :backward, :right, :left]
-		@enemyDirections = []
-		@mostCloseEnemiesAreBinded = false
+		@enemy_directions = []
+		@most_close_enemies_are_binded = false
 		@warrior = nil
-    @imBeingAttack2 = false
-    @isResting = false
-    @foundCaptives = false
-    @isAUnitInFront = false
+    @is_resting = false
+    @found_captives = false
+    @is_a_unit_in_front = false
 	end
 
   def play_turn(warrior)
 
   	@warrior = warrior
 
-    cleanTheRoom!
+    clean_the_room!
 
-  	bindCloseEnemies! unless @mostCloseEnemiesAreBinded && @isAUnitInFront
+  	bind_close_enemies! unless @most_close_enemies_are_binded && @is_a_unit_in_front
 
-  	rest! if (needsRest? && !imBeingAttack?)
+  	rest! if (needs_rest? && !im_being_attack?)
 
-	  attackEnemiesBinded! if @mostCloseEnemiesAreBinded && !@isResting
+	  attack_enemies_binded! if @most_close_enemies_are_binded && !@is_resting
 
-    rescueCaptives! if !@isResting && @enemyDirections.empty?
+    rescue_captives! if !@is_resting && @enemy_directions.empty?
 
   end
 
-  def cleanTheRoom!
-    spacesWithUnits = @warrior.listen 
-
-    spacesWithUnits.each do |unit|
-
-      puts unit
+  def clean_the_room!
+    spaces_with_units = @warrior.listen 
+    spaces_with_units.each do |unit|
       if !@warrior.feel(@warrior.direction_of(unit)).empty?
-
-        return @isAUnitInFront = true    
+        return @is_a_unit_in_front = true    
       else
-        
         @warrior.walk!(@warrior.direction_of(unit)) unless unit.stairs? 
-        return @isAUnitInFront = false        
+        return @is_a_unit_in_front = false        
       end
-      
     end
-
-    @warrior.walk!(@warrior.direction_of_stairs) unless needsRest?
-
+    @warrior.walk!(@warrior.direction_of_stairs) unless needs_rest?
   end
 
-  def rescueCaptives!
+  def rescue_captives!
     @directions.each do |direction|
       space = @warrior.feel(direction)
-
       if  space.captive? 
-        @foundCaptives = true
         @warrior.rescue!(direction)
-        return true
+        @found_captives = true
+        break
+      else
+        @found_captives = false
       end
     end
-    @foundCaptives = false
+    @found_captives
   end
 
-  def bindCloseEnemies!()
-
+  def bind_close_enemies!
   	@directions.each do |direction|
   		space = @warrior.feel(direction)
-
 	   	if  space.enemy? 
-			  @enemyDirections << direction
+			  @enemy_directions << direction
   			@warrior.bind!(direction)
-  			return false
+  			break
   		end
     end
-
-  	if !@enemyDirections.empty?
-  		@mostCloseEnemiesAreBinded = true	
+  	if !@enemy_directions.empty?
+  		@most_close_enemies_are_binded = true	
   	end
-	
   end
 
-  def attackEnemiesBinded!()
-  	if !@warrior.feel(@enemyDirections.last).empty?
-		@warrior.attack!(@enemyDirections.last)
-	else
-		@enemyDirections.pop
-    if @enemyDirections.empty?
-      @mostCloseEnemiesAreBinded = false
-    end
-	end
-  end
-
-  def needsRest?()
-  	if @warrior.health < @minHealth || !@isFullRecover
-  		@isFullRecover = false
-  		return true
-  	else
-  		return false
+  def attack_enemies_binded!
+  	if !@warrior.feel(@enemy_directions.last).empty?
+		  @warrior.attack!(@enemy_directions.last)
+	  else
+		  @enemy_directions.pop
+      if @enemy_directions.empty?
+        @most_close_enemies_are_binded = false
+      end
 	  end
   end
 
-  def rest!()
-  	if @warrior.health < @maxHealth
-  		@warrior.rest!
-      @isResting = true
+  def needs_rest?
+  	if @warrior.health < @min_health || !@is_full_recover
+  		@is_full_recover = false
+  		true
   	else
-      @isResting = false
-  		@isFullRecover = true
-      @healthLevelLastTurn  = @warrior.health
+  		false
+	  end
+  end
+
+  def rest!
+  	if @warrior.health < @max_health
+  		@warrior.rest!
+      @is_resting = true
+  	else
+      @is_resting = false
+  		@is_full_recover = true
+      @health_level_last_turn  = @warrior.health
   	end
   end
 
-  def imBeingAttack?()
-
-  	if  @warrior.health < @healthLevelLastTurn
-  		@healthLevelLastTurn = @warrior.health
-  		return true
+  def im_being_attack?
+  	if  @warrior.health < @health_level_last_turn
+  		@health_level_last_turn = @warrior.health
+  		true
   	else
-  		return false
+  		false
   	end
   end
 
