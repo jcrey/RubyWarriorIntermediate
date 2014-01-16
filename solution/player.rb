@@ -1,141 +1,132 @@
 class Player
 
-	def initialize
-		@maxHealth = 20
-		@minHealth = 10
-		@isFullRecover = true
-		@healthLevelLastTurn = 20
-		@directionOfStairs = nil
-		@directions = [:forward, :backward, :right, :left]
-		@enemyDirections = []
-		@mostCloseEnemiesAreBinded = false
-		@warrior = nil
-    @imBeingAttack2 = false
-    @isResting = false
-    @foundCaptives = false
-    @isAUnitInFront = false
-	end
+  def initialize
+    @max_health = 20
+    @min_health = 10
+    @is_full_recover = true
+    @health_level_last_turn = 20
+    @directions = [:forward, :backward, :right, :left]
+    @enemy_directions = []
+    @most_close_enemies_are_binded = false
+    @warrior = nil
+    @is_resting = false
+    @found_captives = false
+    @is_a_unit_in_front = false
+  end
 
   def play_turn(warrior)
 
-  	@warrior = warrior
+    @warrior = warrior
 
-    cleanTheRoom!
+    clean_the_room!
 
-  	bindCloseEnemies! unless @mostCloseEnemiesAreBinded && @isAUnitInFront
+    bind_close_enemies! unless @most_close_enemies_are_binded && @is_a_unit_in_front
 
-  	rest! if (needsRest? && !imBeingAttack?)
+    rest! if (needs_rest? && !im_being_attack?)
 
-	  attackEnemiesBinded! if @mostCloseEnemiesAreBinded && !@isResting
+    attack_enemies_binded! if @most_close_enemies_are_binded && !@is_resting
 
-    rescueCaptives! if !@isResting && @enemyDirections.empty?
+    rescue_captives! if !@is_resting && @enemy_directions.empty?
 
   end
 
-  def cleanTheRoom!
-    spacesWithUnits = @warrior.listen 
-
-    spacesWithUnits.each do |unit|
-
+  def clean_the_room!
+    spaces_with_units = @warrior.listen 
+    direction = @warrior.direction_of_stairs
+    spaces_with_units.each do |unit|
       if !@warrior.feel(@warrior.direction_of(unit)).empty?
-
-        return @isAUnitInFront = true    
+        @is_a_unit_in_front = true    
+        break
       else
         if @warrior.feel(@warrior.direction_of(unit)).stairs? 
-          goAroundStairs!
+          direction = go_around_stairs!
         else
-          @warrior.walk!(@warrior.direction_of(unit)) unless needsRest?
+          direction = @warrior.direction_of(unit)
         end
-        return @isAUnitInFront = false        
+         @is_a_unit_in_front = false  
+         break
       end
-      
     end
-
-    @warrior.walk!(@warrior.direction_of_stairs) unless needsRest?
-
+    @warrior.walk!(direction)  if !needs_rest? && !@is_a_unit_in_front
   end
 
-  def goAroundStairs!
+  def go_around_stairs!
     @directions.each do |direction|
-      puts direction
-      puts @warrior.feel(direction).empty?
       if @warrior.feel(direction).empty? && !@warrior.feel(direction).stairs?
-        @warrior.walk!(direction) unless needsRest?
+        direction
         break
       end
     end
   end
 
-  def rescueCaptives!
+  def rescue_captives!
     @directions.each do |direction|
       space = @warrior.feel(direction)
-
       if  space.captive? 
-        @foundCaptives = true
         @warrior.rescue!(direction)
-        return true
+        @found_captives = true
+        break
+      else
+        @found_captives = false
       end
     end
-    @foundCaptives = false
+    @found_captives
   end
 
-  def bindCloseEnemies!()
-
-  	@directions.each do |direction|
-  		space = @warrior.feel(direction)
-
-	   	if  space.enemy? 
-			  @enemyDirections << direction
-  			@warrior.bind!(direction)
-  			return false
-  		end
+  def bind_close_enemies!
+    directions_chequed = 0
+    @directions.each do |direction|
+      directions_chequed += 1
+      space = @warrior.feel(direction)
+      if  space.enemy? 
+        @enemy_directions << direction
+        @warrior.bind!(direction)
+        break
+      end
     end
-
-  	if !@enemyDirections.empty?
-  		@mostCloseEnemiesAreBinded = true	
-  	end
-	
-  end
-
-  def attackEnemiesBinded!()
-  	if !@warrior.feel(@enemyDirections.last).empty?
-		@warrior.attack!(@enemyDirections.last)
-	else
-		@enemyDirections.pop
-    if @enemyDirections.empty?
-      @mostCloseEnemiesAreBinded = false
+    if !@enemy_directions.empty? && directions_chequed == 4
+      @most_close_enemies_are_binded = true 
     end
-	end
   end
 
-  def needsRest?()
-  	if @warrior.health < @minHealth || !@isFullRecover
-  		@isFullRecover = false
-  		return true
-  	else
-  		return false
-	  end
+  def attack_enemies_binded!
+    if !@warrior.feel(@enemy_directions.last).empty?
+      @warrior.attack!(@enemy_directions.last)
+    else
+      @enemy_directions.pop
+      if @enemy_directions.empty?
+        @most_close_enemies_are_binded = false
+      end
+    end
   end
 
-  def rest!()
-  	if @warrior.health < @maxHealth
-  		@warrior.rest!
-      @isResting = true
-  	else
-      @isResting = false
-  		@isFullRecover = true
-      @healthLevelLastTurn  = @warrior.health
-  	end
+  def needs_rest?
+    if @warrior.health < @min_health || !@is_full_recover
+      @is_full_recover = false
+      true
+    else
+      false
+    end
   end
 
-  def imBeingAttack?()
+  def rest!
+    if @warrior.health < @max_health
+      @warrior.rest!
+      @is_resting = true
+    else
+      @is_resting = false
+      @is_full_recover = true
+      @health_level_last_turn  = @warrior.health
+    end
+  end
 
-  	if  @warrior.health < @healthLevelLastTurn
-  		@healthLevelLastTurn = @warrior.health
-  		return true
-  	else
-  		return false
-  	end
+  def im_being_attack?
+    if  @warrior.health < @health_level_last_turn
+      @health_level_last_turn = @warrior.health
+      true
+    else
+      false
+    end
   end
 
 end
