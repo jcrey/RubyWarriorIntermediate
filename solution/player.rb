@@ -15,19 +15,12 @@ class Player
 	end
 
   def play_turn(warrior)
-
   	@warrior = warrior
-
     clean_the_room!
-
   	bind_close_enemies! unless @most_close_enemies_are_binded && @is_a_unit_in_front
-
   	rest! if (needs_rest? && !im_being_attack?)
-
 	  attack_enemies_binded! if @most_close_enemies_are_binded && !@is_resting
-
     rescue_captives! if !@is_resting && @enemy_directions.empty?
-
   end
 
   def clean_the_room!
