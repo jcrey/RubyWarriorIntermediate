@@ -10,6 +10,5 @@ class Player
 
     warrior.walk!(@directionOfStairs)
 
-
   end
 end
